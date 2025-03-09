@@ -1,0 +1,12 @@
+- name: Create a file in /var/scr/test_folder
+  hosts: all
+  tasks:
+  - name: Ensure the directory exists
+    file:
+      path: /var/scr/test_folder
+      state: directory
+
+  - name: Create a file in the directory
+    file:
+      path: /var/scr/test_folder/test_file.txt
+      state: touch

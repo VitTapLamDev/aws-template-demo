@@ -1,0 +1,2 @@
+[all]
+ansible_user=localpwm ansible_host="{{ intance_host }}" ansible_password="{{ intance_password }}"
