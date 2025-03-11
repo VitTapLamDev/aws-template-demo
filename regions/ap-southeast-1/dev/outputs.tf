@@ -8,7 +8,11 @@ output "default_subnet_ids" {
   ]
 }
 
-output "rds_cluster_endpoint" {
-  value = module.rds_cluster.cluster_endpoint
-  description = "Cluster endpoint"
+# output "rds_cluster_endpoint" {
+#   value = module.rds_cluster.cluster_endpoint
+#   description = "Cluster endpoint"
+# }
+
+output "alb_target_group_arn" {
+  value = module.alb.target_groups["http-request"].arn
 }

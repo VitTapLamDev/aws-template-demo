@@ -67,13 +67,10 @@ locals {
       tags  = {
         rds-policy  = "rds-archive-role"
       }
-  }
+    }
   }
   
-
-  networks = {
-
-  }
+  networks = {}
 
   security_groups = {
     ec2_ansible = {
@@ -178,4 +175,124 @@ locals {
       }
     }
   }
+
+  asg = {
+    name = "aml-asg-dev-env"
+
+    min_size                  = 0
+    max_size                  = 1
+    desired_capacity          = 1
+    wait_for_capacity_timeout = 0
+    health_check_type         = "EC2"
+    vpc_zone_identifier       = [for s in aws_default_subnet.default_subnets : s.id]
+
+    initial_lifecycle_hooks = []
+
+    instance_refresh = {}
+
+    # Launch template
+    launch_template_name        = "aml-lg-asg"
+    launch_template_description = "Launch template for aml-asg"
+    update_default_version      = true
+
+    image_id          = "ami-0b5a4445ada4a59b1"
+    instance_type     = "t3.micro"
+    ebs_optimized     = false
+    enable_monitoring = false
+
+    # IAM role & instance profile
+    create_iam_instance_profile = true
+    iam_role_name               = "iam-role-asg"
+    iam_role_path               = "/ec2/"
+    iam_role_description        = "IAM role for ASG"
+    iam_role_tags = {
+      CustomIamRole = "Yes"
+    }
+    iam_role_policies = {
+      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    }
+
+    block_device_mappings = []
+
+    capacity_reservation_specification = {}
+
+    cpu_options = {}
+
+    credit_specification = {}
+
+    instance_market_options = {}
+    metadata_options = {
+      http_endpoint               = "enabled"
+      http_tokens                 = "required"
+      http_put_response_hop_limit = 1
+    }
+
+    network_interfaces = []
+
+    traffic_source_attachments = {
+      traffic_source = {
+        traffic_source_identifier = module.alb.target_groups["http-request"].arn
+        traffic_source_type       = "elbv2"
+      }
+    }
+
+    placement = {
+      availability_zone = "ap-southeast-1a"
+    }
+
+    tags = {
+      
+    }
+  }
+
+  alb = {
+    name    = "aml-alb-asg"
+    vpc_id  = data.aws_vpc.default.id
+    subnets = [ for s in aws_default_subnet.default_subnets : s.id ]
+
+    # Security Group
+    security_group_ingress_rules = {
+    }
+    security_group_egress_rules = {}
+    listeners = {
+      ex-http = {
+        port     = 80
+        protocol = "HTTP"
+        forward = {
+          target_group_key = "http-request"
+        }
+        # redirect = {
+        #   port        = "443"
+        #   protocol    = "HTTPS"
+        #   status_code = "HTTP_301"
+        # }
+      }
+    }
+
+    enable_deletion_protection = false
+
+    target_groups = {
+      http-request = {
+        name        = "my-tg"
+        protocol    = "HTTP"
+        port        = 80
+        vpc_id      = data.aws_vpc.default.id
+        create_attachment = false
+        health_check = {
+          enabled             = true
+          path                = "/"
+          interval            = 30
+          timeout             = 5
+          healthy_threshold   = 3
+          unhealthy_threshold = 2
+        }
+      }
+    }
+
+    tags = {
+      Environment = "Development"
+      Project     = "Example"
+    }
+  }
 }
+
